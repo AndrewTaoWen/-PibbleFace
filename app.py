@@ -1,5 +1,4 @@
 from flask import Flask, render_template, Response, jsonify
-from flask_cors import CORS
 import cv2
 import base64
 import numpy as np
@@ -8,7 +7,17 @@ import threading
 import time
 
 app = Flask(__name__)
-CORS(app)
+# Keep untrusted hostnames from reaching a local webcam through DNS rebinding.
+app.config["TRUSTED_HOSTS"] = ["localhost", "127.0.0.1"]
+
+@app.after_request
+def protect_camera_response(response):
+    response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
 
 # Global variables for video streaming
 matcher = FaceEmojiMatcher()
@@ -77,4 +86,4 @@ def get_all_emojis():
     return jsonify(list(matcher.emoji_database.keys()))
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='127.0.0.1', port=5000)
